@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Habit Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green: #2D6A4F;
+  --green-light: #B7E4C7;
+  --green-bg: #D8F3DC;
+  --orange: #B5651D;
+  --orange-light: #FDDCAE;
+  --orange-bg: #FEF0DC;
+  --red: #9B2335;
+  --red-light: #F5B8C0;
+  --red-bg: #FDEAEC;
+  --gray: #6B6B6B;
+  --gray-light: #E8E6E1;
+  --gray-bg: #F4F2EE;
+  --ink: #1A1A1A;
+  --paper: #FAFAF8;
+  --paper2: #F2F0EB;
+  --border: rgba(0,0,0,0.08);
+  --serif: 'DM Serif Display', Georgia, serif;
+  --sans: 'DM Sans', sans-serif;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { font-size: 16px; }
+body {
+  font-family: var(--sans);
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* HEADER */
+.header {
+  padding: 52px 24px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--paper);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.header-top { display: flex; align-items: flex-start; justify-content: space-between; }
+.header-date { font-family: var(--sans); font-size: 12px; font-weight: 300; color: var(--gray); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
+.header-title { font-family: var(--serif); font-size: 28px; color: var(--ink); line-height: 1.1; }
+.day-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 8px; transition: background .4s; background: var(--gray-light); }
+.day-dot.green { background: var(--green); }
+.day-dot.orange { background: var(--orange); }
+.day-dot.red { background: var(--red); }
+
+/* METRICS */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.metric-cell {
+  background: var(--paper);
+  padding: 14px 12px;
+  text-align: center;
+}
+.metric-cell-label { font-size: 10px; font-weight: 300; color: var(--gray); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 4px; }
+.metric-cell-val { font-family: var(--serif); font-size: 22px; }
+.metric-cell-val.green { color: var(--green); }
+.metric-cell-val.orange { color: var(--orange); }
+.metric-cell-val.red { color: var(--red); }
+
+/* NAV */
+.nav {
+  display: flex;
+  padding: 0 24px;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--paper);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar { display: none; }
+.nav-btn {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--gray);
+  border: none;
+  background: none;
+  padding: 14px 16px 12px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color .2s, border-color .2s;
+  letter-spacing: .01em;
+}
+.nav-btn.active { color: var(--ink); font-weight: 500; border-bottom-color: var(--ink); }
+
+/* CONTENT */
+.content { padding: 24px; max-width: 480px; margin: 0 auto; }
+
+/* STATUS BANNER */
+.status-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity .3s, transform .3s;
+}
+.status-banner.visible { opacity: 1; transform: translateY(0); }
+.status-banner.green { background: var(--green-bg); }
+.status-banner.orange { background: var(--orange-bg); }
+.status-banner.red { background: var(--red-bg); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.status-banner.green .status-dot { background: var(--green); }
+.status-banner.orange .status-dot { background: var(--orange); }
+.status-banner.red .status-dot { background: var(--red); }
+.status-text { font-size: 13px; font-weight: 400; }
+.status-banner.green .status-text { color: var(--green); }
+.status-banner.orange .status-text { color: var(--orange); }
+.status-banner.red .status-text { color: var(--red); }
+
+/* SECTION */
+.section { margin-bottom: 28px; }
+.section-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gray);
+  margin-bottom: 12px;
+  padding-left: 2px;
+}
+
+/* HABIT CARD */
+.habit-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: border-color .2s, background .2s;
+}
+.habit-card.done-pos { background: var(--green-bg); border-color: var(--green-light); }
+.habit-card.done-neg-bad { background: var(--red-bg); border-color: var(--red-light); }
+.habit-card.done-neg-ok { background: var(--green-bg); border-color: var(--green-light); }
+.habit-name { font-size: 14px; font-weight: 400; color: var(--ink); flex: 1; line-height: 1.3; }
+.habit-card.done-pos .habit-name { color: var(--green); }
+.habit-card.done-neg-bad .habit-name { color: var(--red); }
+.habit-card.done-neg-ok .habit-name { color: var(--green); }
+
+.btn-row { display: flex; gap: 6px; flex-shrink: 0; }
+.btn {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 7px 13px;
+  border-radius: 100px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: transform .1s, opacity .15s;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.96); }
+.btn-si { background: var(--green-bg); color: var(--green); border-color: var(--green-light); }
+.btn-no { background: var(--red-bg); color: var(--red); border-color: var(--red-light); }
+.btn-ok { background: var(--green-bg); color: var(--green); border-color: var(--green-light); }
+.btn-undo { background: var(--gray-bg); color: var(--gray); border-color: var(--gray-light); padding: 7px 10px; }
+.badge {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 11px;
+  border-radius: 100px;
+  flex-shrink: 0;
+}
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+.badge-ok { background: var(--green-bg); color: var(--green); }
+
+/* CALENDARIO */
+.cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.cal-month { font-family: var(--serif); font-size: 20px; color: var(--ink); }
+.cal-nav-btn { background: var(--paper2); border: 1px solid var(--border); border-radius: 100px; width: 32px; height: 32px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--ink); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-day-label { font-size: 10px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--gray); text-align: center; padding: 4px 0 8px; }
+.cal-day {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 400;
+  cursor: default;
+  transition: transform .1s;
+}
+.cal-day.today { outline: 2px solid var(--ink); outline-offset: 1px; font-weight: 500; }
+.cal-day.d-green { background: var(--green-bg); color: var(--green); font-weight: 500; }
+.cal-day.d-orange { background: var(--orange-bg); color: var(--orange); font-weight: 500; }
+.cal-day.d-red { background: var(--red-bg); color: var(--red); font-weight: 500; }
+.cal-day.d-empty { background: var(--gray-bg); color: var(--gray); }
+.cal-day.d-future { color: var(--border); }
+.cal-day.d-blank { }
+
+.cal-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.cal-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--gray); }
+.cal-legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* REVISIONE */
+.review-month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.review-month-title { font-family: var(--serif); font-size: 22px; }
+.rev-card {
+  background: var(--paper2);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 12px;
+}
+.rev-card-title { font-size: 10px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--gray); margin-bottom: 14px; }
+.rev-color-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
+.rev-color-cell { border-radius: var(--radius-sm); padding: 14px 10px; text-align: center; }
+.rev-color-cell.green { background: var(--green-bg); }
+.rev-color-cell.orange { background: var(--orange-bg); }
+.rev-color-cell.red { background: var(--red-bg); }
+.rev-color-num { font-family: var(--serif); font-size: 28px; }
+.rev-color-cell.green .rev-color-num { color: var(--green); }
+.rev-color-cell.orange .rev-color-num { color: var(--orange); }
+.rev-color-cell.red .rev-color-num { color: var(--red); }
+.rev-color-label { font-size: 10px; font-weight: 300; text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+.rev-color-cell.green .rev-color-label { color: var(--green); }
+.rev-color-cell.orange .rev-color-label { color: var(--orange); }
+.rev-color-cell.red .rev-color-label { color: var(--red); }
+
+.rev-stat { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.rev-stat:last-child { border-bottom: none; }
+.rev-stat-label { color: var(--gray); font-weight: 300; }
+.rev-stat-val { font-weight: 500; color: var(--ink); text-align: right; max-width: 55%; }
+
+.streak-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--green-bg);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-top: 4px;
+}
+.streak-pill-num { font-family: var(--serif); font-size: 32px; color: var(--green); }
+.streak-pill-text { font-size: 13px; color: var(--green); font-weight: 300; line-height: 1.4; }
+
+.cmp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cmp-cell { background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; text-align: center; }
+.cmp-cell-label { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--gray); font-weight: 300; margin-bottom: 6px; }
+.cmp-cell-val { font-family: var(--serif); font-size: 26px; color: var(--ink); }
+.cmp-delta { font-size: 12px; margin-top: 3px; font-weight: 500; }
+.cmp-delta.pos { color: var(--green); }
+.cmp-delta.neg { color: var(--red); }
+.cmp-delta.neu { color: var(--gray); }
+
+.dow-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 4px; }
+.dow-cell { text-align: center; }
+.dow-label { font-size: 10px; color: var(--gray); font-weight: 300; margin-bottom: 6px; }
+.dow-bar-wrap { height: 44px; display: flex; align-items: flex-end; justify-content: center; }
+.dow-bar { width: 18px; border-radius: 4px 4px 0 0; min-height: 3px; }
+.dow-pct { font-size: 10px; color: var(--gray); margin-top: 4px; }
+
+.motivation-text { font-family: var(--serif); font-size: 17px; color: var(--ink); line-height: 1.5; font-style: italic; margin-top: 4px; }
+
+.note-label { font-size: 10px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--gray); margin-bottom: 10px; }
+.note-area {
+  width: 100%;
+  min-height: 90px;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 300;
+  padding: 14px 16px;
+  background: var(--paper2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  resize: vertical;
+  outline: none;
+  transition: border-color .2s;
+  line-height: 1.6;
+}
+.note-area:focus { border-color: rgba(0,0,0,0.2); }
+.note-area::placeholder { color: #bbb; }
+.note-save-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.note-save-btn {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 18px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.note-save-btn:active { opacity: .75; }
+.note-saved { font-size: 12px; color: var(--green); display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-date" id="header-date"></div>
+      <div class="header-title">Le mie abitudini</div>
+    </div>
+    <div class="day-dot" id="day-dot"></div>
+  </div>
+</div>
+
+<div class="metrics">
+  <div class="metric-cell">
+    <div class="metric-cell-label">Verdi</div>
+    <div class="metric-cell-val green" id="m-green">0</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-cell-label">Arancioni</div>
+    <div class="metric-cell-val orange" id="m-orange">0</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-cell-label">Rossi</div>
+    <div class="metric-cell-val red" id="m-red">0</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-cell-label">Streak</div>
+    <div class="metric-cell-val" id="m-streak">0</div>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="switchTab('oggi')">Oggi</button>
+  <button class="nav-btn" onclick="switchTab('calendario')">Calendario</button>
+  <button class="nav-btn" onclick="switchTab('revisione')">Revisione</button>
+</nav>
+
+<div class="content">
+
+  <!-- OGGI -->
+  <div id="tab-oggi">
+    <div id="status-banner" class="status-banner"></div>
+    <div class="section">
+      <div class="section-label">Abitudini positive</div>
+      <div id="pos-habits"></div>
+    </div>
+    <div class="section">
+      <div class="section-label">Abitudini negative</div>
+      <div id="neg-habits"></div>
+    </div>
+  </div>
+
+  <!-- CALENDARIO -->
+  <div id="tab-calendario" style="display:none">
+    <div class="cal-header">
+      <button class="cal-nav-btn" onclick="changeCalMonth(-1)">&#8249;</button>
+      <span class="cal-month" id="cal-month-label"></span>
+      <button class="cal-nav-btn" onclick="changeCalMonth(1)">&#8250;</button>
+    </div>
+    <div class="cal-grid" id="cal-labels"></div>
+    <div class="cal-grid" id="cal-grid" style="margin-top:2px"></div>
+    <div class="cal-legend">
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--green)"></div>Verde</div>
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--orange)"></div>Arancione</div>
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--red)"></div>Rosso</div>
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--gray-light)"></div>Non registrato</div>
+    </div>
+  </div>
+
+  <!-- REVISIONE -->
+  <div id="tab-revisione" style="display:none">
+    <div id="review-content"></div>
+  </div>
+
+</div>
+
+<script>
+const POS = [
+  {id:'sveglia', name:'Sveglia alle 9:30'},
+  {id:'rito',    name:'Rito mattutino'},
+  {id:'lettura', name:'Lettura quotidiana'},
+  {id:'attivita',name:'Attività fisica / uscita'},
+];
+const NEG = [
+  {id:'telefono',   name:'Telefono appena sveglio'},
+  {id:'screentime', name:'Screentime >30 min social'},
+];
+const MONTHS = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+const DAYS_SHORT = ['Lu','Ma','Me','Gi','Ve','Sa','Do'];
+const DAYS_FULL  = ['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato','Domenica'];
+
+const now = new Date();
+const todayKey = fmtKey(now);
+
+function fmtKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function pad(n){ return String(n).padStart(2,'0'); }
+function getData(){ try{ return JSON.parse(localStorage.getItem('ht3')||'{}'); }catch{ return {}; } }
+function saveData(d){ try{ localStorage.setItem('ht3', JSON.stringify(d)); }catch{} }
+
+let store = getData();
+if(!store.days)  store.days  = {};
+if(!store.notes) store.notes = {};
+if(!store.days[todayKey]) store.days[todayKey] = {};
+
+function periodOf(dateOrKey){
+  const d = typeof dateOrKey === 'string' ? new Date(dateOrKey+'T12:00:00') : dateOrKey;
+  const y = d.getFullYear(), m = d.getMonth()+1, day = d.getDate();
+  if(day >= 7){ return `${y}-${pad(m)}`; }
+  else {
+    const pm = m === 1 ? 12 : m-1;
+    const py = m === 1 ? y-1 : y;
+    return `${py}-${pad(pm)}`;
+  }
+}
+function periodLabel(pk){
+  const [y,m] = pk.split('-');
+  return `${MONTHS[parseInt(m)-1]} ${y}`;
+}
+function currentPeriod(){ return periodOf(now); }
+
+function dayColor(key){
+  const d = store.days[key];
+  if(!d || Object.keys(d).length === 0) return null;
+  const hasNeg = NEG.some(h => d[h.id] === 'yes');
+  if(hasNeg) return 'red';
+  const allPos = POS.every(h => d[h.id] === 'yes');
+  return allPos ? 'green' : 'orange';
+}
+
+function periodStats(pk){
+  let g=0, o=0, r=0;
+  Object.keys(store.days).forEach(k => {
+    if(periodOf(k) === pk){
+      const c = dayColor(k);
+      if(c==='green') g++;
+      else if(c==='orange') o++;
+      else if(c==='red') r++;
+    }
+  });
+  return {g, o, r};
+}
+
+function currentStreak(){
+  let streak = 0;
+  const d = new Date(now);
+  for(let i=0; i<120; i++){
+    const k = fmtKey(d);
+    if(dayColor(k) === 'green') streak++;
+    else break;
+    d.setDate(d.getDate()-1);
+  }
+  return streak;
+}
+
+function longestStreakInPeriod(pk){
+  const keys = Object.keys(store.days).filter(k => periodOf(k)===pk).sort();
+  let max=0, cur=0;
+  keys.forEach(k => {
+    if(dayColor(k)==='green'){ cur++; max=Math.max(max,cur); } else cur=0;
+  });
+  return max;
+}
+
+function updateMetrics(){
+  const pk = currentPeriod();
+  const s = periodStats(pk);
+  document.getElementById('m-green').textContent = s.g;
+  document.getElementById('m-orange').textContent = s.o;
+  document.getElementById('m-red').textContent = s.r;
+  document.getElementById('m-streak').textContent = currentStreak();
+}
+
+function updateDayDot(){
+  const c = dayColor(todayKey);
+  const dot = document.getElementById('day-dot');
+  dot.className = 'day-dot ' + (c||'');
+}
+
+function renderStatusBanner(){
+  const c = dayColor(todayKey);
+  const el = document.getElementById('status-banner');
+  if(!c){ el.className='status-banner'; el.innerHTML=''; return; }
+  const map = {
+    green:  'Giornata verde — tutto completato',
+    orange: 'Giornata arancione — manca qualche abitudine',
+    red:    'Giornata rossa — hai ceduto a una cattiva abitudine'
+  };
+  el.className = 'status-banner visible ' + c;
+  el.innerHTML = `<div class="status-dot"></div><span class="status-text">${map[c]}</span>`;
+}
+
+function renderHabits(){
+  const d = store.days[todayKey] || {};
+
+  const pe = document.getElementById('pos-habits');
+  pe.innerHTML = '';
+  POS.forEach(h => {
+    const card = document.createElement('div');
+    const done = d[h.id] === 'yes';
+    card.className = 'habit-card' + (done ? ' done-pos' : '');
+    const name = document.createElement('span');
+    name.className = 'habit-name';
+    name.textContent = h.name;
+    card.appendChild(name);
+    const row = document.createElement('div');
+    row.className = 'btn-row';
+    if(done){
+      const badge = document.createElement('span');
+      badge.className = 'badge badge-green';
+      badge.textContent = 'Fatto';
+      const u = mkUndo(() => { delete store.days[todayKey][h.id]; saveData(store); refresh(); });
+      row.appendChild(badge); row.appendChild(u);
+    } else {
+      const b = document.createElement('button');
+      b.className = 'btn btn-si'; b.textContent = 'Fatto';
+      b.onclick = () => { store.days[todayKey][h.id]='yes'; saveData(store); refresh(); };
+      row.appendChild(b);
+    }
+    card.appendChild(row);
+    pe.appendChild(card);
+  });
+
+  const ne = document.getElementById('neg-habits');
+  ne.innerHTML = '';
+  NEG.forEach(h => {
+    const card = document.createElement('div');
+    const val = d[h.id];
+    if(val==='yes') card.className='habit-card done-neg-bad';
+    else if(val==='no') card.className='habit-card done-neg-ok';
+    else card.className='habit-card';
+    const name = document.createElement('span');
+    name.className = 'habit-name'; name.textContent = h.name;
+    card.appendChild(name);
+    const row = document.createElement('div');
+    row.className = 'btn-row';
+    if(val==='yes'){
+      const badge = document.createElement('span');
+      badge.className='badge badge-red'; badge.textContent='Fatto';
+      const u = mkUndo(() => { delete store.days[todayKey][h.id]; saveData(store); refresh(); });
+      row.appendChild(badge); row.appendChild(u);
+    } else if(val==='no'){
+      const badge = document.createElement('span');
+      badge.className='badge badge-ok'; badge.textContent='Evitato';
+      const u = mkUndo(() => { delete store.days[todayKey][h.id]; saveData(store); refresh(); });
+      row.appendChild(badge); row.appendChild(u);
+    } else {
+      const b1 = document.createElement('button');
+      b1.className='btn btn-no'; b1.textContent="L'ho fatto";
+      b1.onclick = () => { store.days[todayKey][h.id]='yes'; saveData(store); refresh(); };
+      const b2 = document.createElement('button');
+      b2.className='btn btn-ok'; b2.textContent='Evitato';
+      b2.onclick = () => { store.days[todayKey][h.id]='no'; saveData(store); refresh(); };
+      row.appendChild(b1); row.appendChild(b2);
+    }
+    card.appendChild(row);
+    ne.appendChild(card);
+  });
+}
+
+function mkUndo(fn){
+  const b = document.createElement('button');
+  b.className='btn btn-undo'; b.innerHTML='&#8617;'; b.title='Annulla';
+  b.onclick = fn;
+  return b;
+}
+
+let calY = now.getFullYear(), calM = now.getMonth();
+function renderCalendar(){
+  document.getElementById('cal-month-label').textContent = `${MONTHS[calM]} ${calY}`;
+  const labEl = document.getElementById('cal-labels');
+  labEl.innerHTML = '';
+  DAYS_SHORT.forEach(d => { const e=document.createElement('div'); e.className='cal-day-label'; e.textContent=d; labEl.appendChild(e); });
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  const firstDow = new Date(calY, calM, 1).getDay();
+  const offset = firstDow===0 ? 6 : firstDow-1;
+  const dim = new Date(calY, calM+1, 0).getDate();
+  for(let i=0;i<offset;i++){ const e=document.createElement('div'); e.className='cal-day d-blank'; grid.appendChild(e); }
+  for(let d=1;d<=dim;d++){
+    const k = `${calY}-${pad(calM+1)}-${pad(d)}`;
+    const isFuture = new Date(calY,calM,d) > now;
+    const e = document.createElement('div'); e.textContent = d;
+    if(isFuture){ e.className='cal-day d-future'; }
+    else {
+      const c = dayColor(k);
+      e.className = 'cal-day ' + (c ? 'd-'+c : 'd-empty');
+      if(c) e.title = `${d}/${calM+1}: ${c}`;
+    }
+    if(k===todayKey) e.classList.add('today');
+    grid.appendChild(e);
+  }
+}
+function changeCalMonth(delta){
+  calM+=delta;
+  if(calM<0){calM=11;calY--;} if(calM>11){calM=0;calY++;}
+  renderCalendar();
+}
+
+let reviewPeriod = currentPeriod();
+function renderReview(){
+  const el = document.getElementById('review-content');
+  el.innerHTML='';
+  const pk = reviewPeriod;
+  const s = periodStats(pk);
+  const total = s.g+s.o+s.r;
+  const pctG = total>0 ? Math.round(s.g/total*100) : 0;
+
+  const [py,pm] = pk.split('-');
+  const pmInt = parseInt(pm);
+  const prevPk = pmInt===1 ? `${parseInt(py)-1}-12` : `${py}-${pad(pmInt-1)}`;
+  const prevS = periodStats(prevPk);
+  const prevTotal = prevS.g+prevS.o+prevS.r;
+  const prevPctG = prevTotal>0 ? Math.round(prevS.g/prevTotal*100) : null;
+
+  const longest = longestStreakInPeriod(pk);
+
+  const negCount={}, posCount={};
+  NEG.forEach(h=>{negCount[h.id]=0;}); POS.forEach(h=>{posCount[h.id]=0;});
+  const dowCount=[0,0,0,0,0,0,0], dowRed=[0,0,0,0,0,0,0];
+  Object.keys(store.days).forEach(k=>{
+    if(periodOf(k)!==pk) return;
+    const day=store.days[k];
+    if(!day) return;
+    NEG.forEach(h=>{if(day[h.id]==='yes') negCount[h.id]++;});
+    POS.forEach(h=>{if(day[h.id]==='yes') posCount[h.id]++;});
+    const dow=new Date(k+'T12:00:00').getDay();
+    const idx=dow===0?6:dow-1;
+    dowCount[idx]++;
+    if(dayColor(k)==='red') dowRed[idx]++;
+  });
+  const worstNeg = NEG.reduce((a,b)=>negCount[a.id]>=negCount[b.id]?a:b);
+  const worstPos = POS.reduce((a,b)=>posCount[a.id]<=posCount[b.id]?a:b);
+
+  const motivations = [
+    [80, 'Mese straordinario. Stai costruendo abitudini che durano.'],
+    [60, 'Buon lavoro. Sei sulla strada giusta.'],
+    [40, 'Inizio promettente. Identifica cosa ti frena.'],
+    [0,  total>0 ? 'Mese difficile. Ogni giorno è un nuovo inizio.' : 'Inizia a registrare le tue giornate.']
+  ];
+  const motivation = motivations.find(([t])=>pctG>=t)[1];
+
+  const allPeriods = [...new Set(Object.keys(store.days).map(periodOf))].sort();
+  const pidx = allPeriods.indexOf(pk);
+
+  const navDiv = document.createElement('div');
+  navDiv.className = 'review-month-nav';
+  const prevBtn = document.createElement('button');
+  prevBtn.className='cal-nav-btn'; prevBtn.innerHTML='&#8249;';
+  prevBtn.onclick=()=>{ if(pidx>0){reviewPeriod=allPeriods[pidx-1]; renderReview();} };
+  prevBtn.disabled = pidx<=0;
+  const nextBtn = document.createElement('button');
+  nextBtn.className='cal-nav-btn'; nextBtn.innerHTML='&#8250;';
+  nextBtn.onclick=()=>{ if(pidx<allPeriods.length-1){reviewPeriod=allPeriods[pidx+1]; renderReview();} };
+  nextBtn.disabled = pidx>=allPeriods.length-1;
+  const title = document.createElement('span');
+  title.className='review-month-title'; title.textContent=periodLabel(pk);
+  navDiv.appendChild(prevBtn); navDiv.appendChild(title); navDiv.appendChild(nextBtn);
+  el.appendChild(navDiv);
+
+  // colori
+  const c1 = document.createElement('div'); c1.className='rev-card';
+  c1.innerHTML=`<div class="rev-card-title">Giorni del periodo</div>
+<div class="rev-color-row">
+  <div class="rev-color-cell green"><div class="rev-color-num">${s.g}</div><div class="rev-color-label">Verdi</div></div>
+  <div class="rev-color-cell orange"><div class="rev-color-num">${s.o}</div><div class="rev-color-label">Arancioni</div></div>
+  <div class="rev-color-cell red"><div class="rev-color-num">${s.r}</div><div class="rev-color-label">Rossi</div></div>
+</div>`;
+  el.appendChild(c1);
+
+  // confronto
+  if(prevPctG !== null){
+    const delta = pctG - prevPctG;
+    const deltaStr = (delta>0?'+':'')+delta+'%';
+    const deltaCls = delta>0?'pos':delta<0?'neg':'neu';
+    const c2 = document.createElement('div'); c2.className='rev-card';
+    c2.innerHTML=`<div class="rev-card-title">Confronto col periodo precedente</div>
+<div class="cmp-row">
+  <div class="cmp-cell"><div class="cmp-cell-label">${periodLabel(prevPk)}</div><div class="cmp-cell-val">${prevPctG}%</div><div class="cmp-delta neu">verdi</div></div>
+  <div class="cmp-cell"><div class="cmp-cell-label">${periodLabel(pk)}</div><div class="cmp-cell-val">${pctG}%</div><div class="cmp-delta ${deltaCls}">${deltaStr}</div></div>
+</div>`;
+    el.appendChild(c2);
+  }
+
+  // stats
+  const c3 = document.createElement('div'); c3.className='rev-card';
+  c3.innerHTML=`<div class="rev-card-title">Dettagli</div>
+<div class="rev-stat"><span class="rev-stat-label">Giorni registrati</span><span class="rev-stat-val">${total}</span></div>
+<div class="rev-stat"><span class="rev-stat-label">Abitudine positiva più saltata</span><span class="rev-stat-val">${worstPos.name}</span></div>
+<div class="rev-stat"><span class="rev-stat-label">Cattiva abitudine più frequente</span><span class="rev-stat-val">${worstNeg.name} (${negCount[worstNeg.id]}×)</span></div>`;
+  el.appendChild(c3);
+
+  // streak
+  if(longest>0){
+    const sp=document.createElement('div'); sp.className='streak-pill';
+    sp.innerHTML=`<div class="streak-pill-num">${longest}</div><div class="streak-pill-text">giorni verdi<br>consecutivi nel periodo</div>`;
+    el.appendChild(sp);
+  }
+
+  // giorno settimana
+  const c4=document.createElement('div'); c4.className='rev-card';
+  const maxR=Math.max(...dowRed,1);
+  let dowHTML=`<div class="rev-card-title">Giorno più difficile</div><div class="dow-row">`;
+  DAYS_SHORT.forEach((label,i)=>{
+    const pct=dowCount[i]>0?Math.round(dowRed[i]/dowCount[i]*100):0;
+    const h=Math.max(3,Math.round(dowRed[i]/maxR*40));
+    const col=pct>=50?'var(--red)':pct>=25?'var(--orange)':'var(--green-light)';
+    dowHTML+=`<div class="dow-cell"><div class="dow-label">${label}</div><div class="dow-bar-wrap"><div class="dow-bar" style="height:${h}px;background:${col}"></div></div><div class="dow-pct">${dowCount[i]>0?pct+'%':'—'}</div></div>`;
+  });
+  dowHTML+='</div>';
+  c4.innerHTML=dowHTML;
+  el.appendChild(c4);
+
+  // motivazione
+  const c5=document.createElement('div'); c5.className='rev-card';
+  c5.innerHTML=`<div class="rev-card-title">Riflessione</div><div class="motivation-text">${motivation}</div>`;
+  el.appendChild(c5);
+
+  // nota
+  const noteKey = pk;
+  const c6=document.createElement('div'); c6.className='rev-card';
+  c6.innerHTML=`<div class="note-label">Nota personale</div>`;
+  const ta=document.createElement('textarea');
+  ta.className='note-area'; ta.placeholder='Come è andato questo periodo? Cosa vuoi migliorare?';
+  ta.value=store.notes[noteKey]||'';
+  const row=document.createElement('div'); row.className='note-save-row';
+  const btn=document.createElement('button'); btn.className='note-save-btn'; btn.textContent='Salva';
+  const msg=document.createElement('span'); msg.className='note-saved'; msg.textContent='Salvato';
+  btn.onclick=()=>{ store.notes[noteKey]=ta.value; saveData(store); msg.style.display='inline'; setTimeout(()=>msg.style.display='none',2000); };
+  row.appendChild(btn); row.appendChild(msg);
+  c6.appendChild(ta); c6.appendChild(row);
+  el.appendChild(c6);
+}
+
+function refresh(){
+  renderHabits();
+  renderStatusBanner();
+  updateDayDot();
+  updateMetrics();
+  if(activeTab==='calendario') renderCalendar();
+  if(activeTab==='revisione') renderReview();
+}
+
+let activeTab='oggi';
+function switchTab(t){
+  ['oggi','calendario','revisione'].forEach(n=>{
+    document.getElementById('tab-'+n).style.display=n===t?'block':'none';
+  });
+  document.querySelectorAll('.nav-btn').forEach((el,i)=>{
+    el.classList.toggle('active',['oggi','calendario','revisione'][i]===t);
+  });
+  activeTab=t;
+  if(t==='calendario') renderCalendar();
+  if(t==='revisione'){ reviewPeriod=currentPeriod(); renderReview(); }
+}
+
+// header date
+const dateOpts = {weekday:'long', day:'numeric', month:'long'};
+document.getElementById('header-date').textContent = now.toLocaleDateString('it-IT', dateOpts);
+
+refresh();
+</script>
+</body>
+</html>
