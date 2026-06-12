@@ -395,7 +395,7 @@ body {
 
 <script>
 const POS = [
-  {id:'sveglia', name:'Sveglia alle 9:30'},
+  {id:'sveglia', name:'Max 8 ore di sonno'},
   {id:'rito',    name:'Rito mattutino'},
   {id:'lettura', name:'Lettura quotidiana'},
   {id:'attivita',name:'Attività fisica / uscita'},
@@ -440,10 +440,9 @@ function currentPeriod(){ return periodOf(now); }
 function dayColor(key){
   const d = store.days[key];
   if(!d || Object.keys(d).length === 0) return null;
-  const hasNeg = NEG.some(h => d[h.id] === 'yes');
-  if(hasNeg) return 'red';
-  const allPos = POS.every(h => d[h.id] === 'yes');
-  return allPos ? 'green' : 'orange';
+  if(NEG.some(h => d[h.id] === 'yes')) return 'red';
+  const missed = POS.filter(h => d[h.id] !== 'yes').length;
+  return missed <= 1 ? 'green' : 'orange';
 }
 
 function periodStats(pk){
